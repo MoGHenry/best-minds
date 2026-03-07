@@ -10,7 +10,7 @@ Thumbs.db
 .idea/
 *.code-workspace
 
-# Node (if needed)
+# Node
 node_modules/
 package-lock.json
 yarn.lock
@@ -23,4 +23,13 @@ yarn.lock
 *.tmp
 *.temp
 .cache/
+
+# Local dev tools
 /.claude
+
+# Test artifacts
+best-minds-workspace/
+evals/
+
+# Unrelated project files
+my-video-tktk/

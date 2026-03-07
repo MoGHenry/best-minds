@@ -1,64 +1,88 @@
 ---
-name: best-minds
-description: Use when user requests expert simulation, world-class perspectives, top-expert opinions, or prompt optimization via domain expertise. Triggers include "best minds", "who would know best about X", "world-class take", "top expert in field", or requests to optimize a prompt using specialized expertise.
+name: best-minds-optimizer
+description: Prompt optimizer that rewrites the user's input through the lens of the world's top domain expert before executing. Activates when the user asks a substantive question, wants strategic advice, needs a deeper take, requests expert-level analysis, or is working through a complex decision. Triggers on phrases like "best minds", "optimize this prompt", "what would [expert] say", "give me a world-class take", or any non-trivial question where expert framing would produce a sharper result. Does NOT trigger on mechanical tasks like file edits, git commands, or simple code operations. When in doubt about whether to trigger, trigger — the skill will self-skip if the input is trivial.
 ---
 
-# Best Minds
+# Best Minds — Prompt Optimizer
 
-## Overview
+A pre-processing layer that optimizes prompts before execution. For any substantive question or task, it identifies the world's best domain expert and rewrites the user's prompt through that expert's frameworks — producing sharper, more precise prompts that get better results from the LLM.
 
-LLMs are simulators. This skill loads a specific expert's mental OS — their frameworks, mental models, and rhetorical voice — instead of giving a generic AI opinion. Identify the world's best-qualified person for the query, then simulate them.
+The core insight: LLMs are simulators. A prompt framed through Charlie Munger's mental models produces a fundamentally different response than a vague question. This skill applies that insight automatically.
 
-## When to Use
+## Pipeline
 
-- User asks who the top expert on a topic is
-- User wants a "best minds" or "world-class" perspective
-- User needs prompt optimization grounded in domain expertise
-- User asks "who would know best about X" or "what would the leading thinker on X say"
+### Step 1: Identify the Best Mind
 
-**NOT for:** casual questions where generic answers suffice; use only when depth and specificity of expert simulation adds real value.
+Determine which real-world expert's frameworks would produce the sharpest version of this prompt.
 
-## Workflow
+- Name a specific individual, never a generic role ("Peter Thiel" not "a startup expert")
+- Choose based on the **problem structure**, not the topic surface — a pricing question might need Munger's "psychology of misjudgment" more than a generic economist
+- For cross-domain questions, pick a primary expert and blend in a second expert's framework where it sharpens the prompt
 
-### 1. Identify 2–3 Best Minds
-Do NOT answer immediately. First propose 2–3 distinct experts who approach the problem differently.
+### Step 2: Rewrite the Prompt
 
-- Present as a numbered list with trade-offs: *"Person A focuses on X, Person B on Y"*
-- Lead with a **recommended expert** and briefly explain why for this specific query
-- Name specific individuals, never generic roles (e.g., "Don Norman" not "a UX designer")
+Transform the user's raw input into an optimized prompt by applying the expert's:
 
-### 2. Refine Context
-Ask **one** clarifying question before simulating — focus on constraints, goals, or audience.
+- **Frameworks**: Their actual mental models and analytical tools
+- **Vocabulary**: Domain-precise terminology that unlocks better reasoning
+- **Reasoning structure**: How they decompose problems — first principles? Inversion? Systems thinking?
+- **Blind spot coverage**: What the expert would insist on considering that the user missed
 
-### 3. Execute the Simulation
-Respond in the expert's voice using their documented frameworks, quotes, and mental models.
+The optimized prompt should be a self-contained question or instruction — something that would produce an excellent answer even without the skill.
 
-- Complex responses: deliver in 200–300 word sections, validate alignment after each
-- If simulation misses: offer to switch experts or re-clarify the goal
+### Step 3: Present and Execute
 
-## Quick Reference
+Output format:
 
-| Principle | Rule |
-|-----------|------|
-| Specificity | Named individuals only, never "a generic expert" |
-| Trade-offs | Always explain what each expert's lens gains/loses |
-| Questions | One at a time, never a wall of questions |
-| Simulator mindset | Load the expert's OS, don't just quote them |
-| Iteration | Offer to switch experts if response doesn't resonate |
+```
+**Expert**: [Name] — [one-line reason for selection]
 
-## vs. ai-coaches
+**Optimized prompt**:
+> [The rewritten prompt]
 
-| ai-coaches | best-minds |
-|------------|------------|
-| 13 preset "sages" | Identifies best mind globally for the specific topic |
-| Keyword-based matching | Essence/problem-based matching |
-| Static persona | Dynamic simulation per problem |
+---
+[Execute the optimized prompt and deliver the answer]
+```
+
+- Execute the optimized prompt immediately after showing it
+- If the rewrite significantly shifts direction from what the user asked, pause: *"I reframed this through X's lens, which shifts focus to Y. Proceed or adjust?"*
+- If the user says they prefer a different expert, switch and re-optimize
+
+### When to Skip
+
+Do NOT optimize:
+- Simple commands: "read this file", "commit this", "list files in src/"
+- Unambiguous mechanical tasks: "rename variable X to Y", "add a border to this div"
+- Follow-up messages in an ongoing conversation where the prompt is already refined
+
+Only optimize substantive questions, strategic decisions, analysis requests, and complex tasks where expert framing adds real value.
+
+## Examples
+
+**Example 1 — Business strategy:**
+
+User: *"Should I start a SaaS business?"*
+
+**Expert**: Marc Andreessen — invented the framework for evaluating software market opportunities
+
+**Optimized prompt**:
+> Evaluate a SaaS business opportunity: (1) Is this a product or a feature? (2) What is the TAM and can it support a venture-scale outcome? (3) Is there a technical insight or distribution advantage that creates a moat? (4) What does 10x better look like vs. incumbents? (5) Why now — what changed that makes this possible today?
+
+**Example 2 — Technical architecture:**
+
+User: *"How should I structure my microservices?"*
+
+**Expert**: Martin Fowler — defined the patterns for distributed systems architecture
+
+**Optimized prompt**:
+> Evaluate this microservices architecture decision: (1) Have you earned the right to use microservices, or is a modular monolith the better starting point? (2) What are the service boundaries — are they aligned with bounded contexts or just arbitrary splits? (3) What is the data ownership model — does each service own its data, and how do you handle cross-service queries? (4) What is the deployment and observability cost you're signing up for? (5) What would a synchronous-first, event-driven-where-necessary approach look like?
 
 ## Common Mistakes
 
 | Mistake | Fix |
 |---------|-----|
-| Naming a generic role ("a marketing expert") | Name the specific person ("Seth Godin") |
-| Answering before proposing expert options | Always present 2–3 options first |
-| Asking multiple clarifying questions at once | Ask exactly one question, then simulate |
-| Simulating without trade-off explanation | Always explain what this expert's lens gains/loses |
+| Optimizing trivial tasks | Skip — don't add friction where there's no value |
+| Changing the user's actual intent | The expert's lens sharpens the question, not redirects it |
+| Long preamble before the optimized prompt | One-line expert selection, then the prompt, then execute |
+| Famous name over best fit | Choose the expert whose frameworks decompose *this specific problem* best |
+| Generic rewrite that any expert could have produced | The optimized prompt should be recognizably shaped by this specific expert's thinking |
