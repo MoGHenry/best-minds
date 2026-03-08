@@ -30,22 +30,39 @@ Transform the user's raw input into an optimized prompt by applying the expert's
 
 The optimized prompt should be a self-contained question or instruction — something that would produce an excellent answer even without the skill.
 
-### Step 3: Present and Execute
+### Step 3: Structured Output and Execution
 
-Output format:
+Emit a JSON metadata block in a fenced code block, then render the display version, then execute.
 
+**JSON Schema:**
+
+```json
+{
+  "status": "optimized" | "skipped" | "error",
+  "expert_profile": {
+    "name": "string",
+    "rationale": "string — why this expert for this problem",
+    "frameworks": ["string — specific mental models or tools applied"]
+  },
+  "optimized_prompt": "string — full rewritten prompt text",
+  "ui_render": "string — Markdown formatted for terminal display",
+  "control_flag": {
+    "immediate_execute": true | false,
+    "user_confirm_required": true | false
+  }
+}
 ```
-**Expert**: [Name] — [one-line reason for selection]
 
-**Optimized prompt**:
-> [The rewritten prompt]
+**Behavior by status:**
 
----
-[Execute the optimized prompt and deliver the answer]
-```
+- **`optimized`** — Emit the JSON block, render `ui_render` to the user as Markdown, then execute `optimized_prompt` and deliver the answer below.
+- **`skipped`** — Emit minimal JSON with `status: "skipped"` (or skip JSON entirely for trivial tasks). Proceed with the original prompt unchanged.
+- **`error`** — Emit JSON with explanation in `rationale`. Fall back to executing the original prompt.
 
-- Execute the optimized prompt immediately after showing it
-- If the rewrite significantly shifts direction from what the user asked, pause: *"I reframed this through X's lens, which shifts focus to Y. Proceed or adjust?"*
+**Direction-shift pause:** If the rewrite significantly shifts direction from what the user asked, set `user_confirm_required: true` and pause: *"I reframed this through X's lens, which shifts focus to Y. Proceed or adjust?"*
+
+**Markdown fallback:** If JSON generation fails for any reason, fall back to the original Markdown format — show the expert, the optimized prompt, and execute. Never let the JSON protocol block execution.
+
 - If the user says they prefer a different expert, switch and re-optimize
 
 ### When to Skip
@@ -63,19 +80,53 @@ Only optimize substantive questions, strategic decisions, analysis requests, and
 
 User: *"Should I start a SaaS business?"*
 
-**Expert**: Marc Andreessen — invented the framework for evaluating software market opportunities
-
-**Optimized prompt**:
-> Evaluate a SaaS business opportunity: (1) Is this a product or a feature? (2) What is the TAM and can it support a venture-scale outcome? (3) Is there a technical insight or distribution advantage that creates a moat? (4) What does 10x better look like vs. incumbents? (5) Why now — what changed that makes this possible today?
+```json
+{
+  "status": "optimized",
+  "expert_profile": {
+    "name": "Marc Andreessen",
+    "rationale": "Invented the framework for evaluating software market opportunities",
+    "frameworks": ["Product vs. feature test", "TAM analysis", "Moat identification", "10x improvement benchmark", "Why-now timing"]
+  },
+  "optimized_prompt": "Evaluate a SaaS business opportunity: (1) Is this a product or a feature? (2) What is the TAM and can it support a venture-scale outcome? (3) Is there a technical insight or distribution advantage that creates a moat? (4) What does 10x better look like vs. incumbents? (5) Why now — what changed that makes this possible today?",
+  "ui_render": "**Expert**: Marc Andreessen — invented the framework for evaluating software market opportunities\n\n**Optimized prompt**:\n> Evaluate a SaaS business opportunity: (1) Is this a product or a feature? (2) What is the TAM and can it support a venture-scale outcome? (3) Is there a technical insight or distribution advantage that creates a moat? (4) What does 10x better look like vs. incumbents? (5) Why now — what changed that makes this possible today?\n\n---",
+  "control_flag": {
+    "immediate_execute": true,
+    "user_confirm_required": false
+  }
+}
+```
 
 **Example 2 — Technical architecture:**
 
 User: *"How should I structure my microservices?"*
 
-**Expert**: Martin Fowler — defined the patterns for distributed systems architecture
+```json
+{
+  "status": "optimized",
+  "expert_profile": {
+    "name": "Martin Fowler",
+    "rationale": "Defined the patterns for distributed systems architecture",
+    "frameworks": ["Monolith-first principle", "Bounded context alignment", "Data ownership model", "Deployment cost analysis", "Synchronous-first design"]
+  },
+  "optimized_prompt": "Evaluate this microservices architecture decision: (1) Have you earned the right to use microservices, or is a modular monolith the better starting point? (2) What are the service boundaries — are they aligned with bounded contexts or just arbitrary splits? (3) What is the data ownership model — does each service own its data, and how do you handle cross-service queries? (4) What is the deployment and observability cost you're signing up for? (5) What would a synchronous-first, event-driven-where-necessary approach look like?",
+  "ui_render": "**Expert**: Martin Fowler — defined the patterns for distributed systems architecture\n\n**Optimized prompt**:\n> Evaluate this microservices architecture decision: (1) Have you earned the right to use microservices, or is a modular monolith the better starting point? (2) What are the service boundaries — are they aligned with bounded contexts or just arbitrary splits? (3) What is the data ownership model — does each service own its data, and how do you handle cross-service queries? (4) What is the deployment and observability cost you're signing up for? (5) What would a synchronous-first, event-driven-where-necessary approach look like?\n\n---",
+  "control_flag": {
+    "immediate_execute": true,
+    "user_confirm_required": false
+  }
+}
+```
 
-**Optimized prompt**:
-> Evaluate this microservices architecture decision: (1) Have you earned the right to use microservices, or is a modular monolith the better starting point? (2) What are the service boundaries — are they aligned with bounded contexts or just arbitrary splits? (3) What is the data ownership model — does each service own its data, and how do you handle cross-service queries? (4) What is the deployment and observability cost you're signing up for? (5) What would a synchronous-first, event-driven-where-necessary approach look like?
+**Example 3 — Skipped (trivial task):**
+
+User: *"Read this file"*
+
+```json
+{
+  "status": "skipped"
+}
+```
 
 ## Common Mistakes
 
@@ -86,3 +137,4 @@ User: *"How should I structure my microservices?"*
 | Long preamble before the optimized prompt | One-line expert selection, then the prompt, then execute |
 | Famous name over best fit | Choose the expert whose frameworks decompose *this specific problem* best |
 | Generic rewrite that any expert could have produced | The optimized prompt should be recognizably shaped by this specific expert's thinking |
+| Producing JSON without executing afterward | The JSON is structured metadata — you must still execute `optimized_prompt` and deliver the answer below |

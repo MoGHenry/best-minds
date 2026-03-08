@@ -29,7 +29,8 @@ The answer reframed the entire question: **this isn't a pricing problem, it's a 
 | Assertion | With Skill | Without Skill |
 |-----------|:---------:|:------------:|
 | Names a specific expert | Yes (Blair Enns) | No |
-| Shows optimized prompt | Yes (5-part rewrite) | No |
+| Emits structured JSON with expert profile | Yes | No |
+| Shows optimized prompt (via `ui_render`) | Yes (5-part rewrite) | No |
 | Executes the optimized prompt | Yes | Yes |
 | Expert frameworks visible in answer | Yes ("practitioner's dilemma", value-based pricing) | No |
 
@@ -50,7 +51,8 @@ The answer followed the same diagnostic methodology Osmani uses — measure firs
 | Assertion | With Skill | Without Skill |
 |-----------|:---------:|:------------:|
 | Names a specific expert | Yes (Addy Osmani) | No |
-| Shows optimized prompt | Yes (7-part diagnostic) | No |
+| Emits structured JSON with expert profile | Yes | No |
+| Shows optimized prompt (via `ui_render`) | Yes (7-part diagnostic) | No |
 | Executes the optimized prompt | Yes | Yes |
 | Expert frameworks visible in answer | Yes (Core Web Vitals methodology, performance budgets) | Partial |
 
@@ -72,19 +74,48 @@ The skill knows when to stay out of the way. Simple commands, file operations, a
 
 | Test Case | With Skill | Without Skill | Improvement |
 |-----------|:---------:|:------------:|:----------:|
-| Business Strategy | 4/4 (100%) | 1/4 (25%) | +75% |
-| Technical Problem | 4/4 (100%) | 1.5/4 (38%) | +62% |
+| Business Strategy | 5/5 (100%) | 1/5 (20%) | +80% |
+| Technical Problem | 5/5 (100%) | 1.5/5 (30%) | +70% |
 | Trivial Task | 3/3 (100%) | 3/3 (100%) | — |
-| **Total** | **11/11** | **5.5/11** | **+50%** |
+| **Total** | **13/13** | **5.5/13** | **+58%** |
 
 ## How It Works
 
 1. **You send a prompt** — any substantive question, decision, or analysis request
 2. **The skill identifies the best expert** — a specific named individual whose frameworks fit your problem
 3. **It rewrites your prompt** through that expert's mental models, vocabulary, and reasoning structure
-4. **It executes the optimized prompt** and delivers the answer
+4. **It emits structured JSON** with the expert profile, optimized prompt, and display metadata
+5. **It executes the optimized prompt** and delivers the answer
 
-For trivial tasks (file reads, git commands, simple code edits), the skill skips automatically.
+For trivial tasks (file reads, git commands, simple code edits), the skill emits `status: "skipped"` and proceeds directly.
+
+## Output Format
+
+The skill outputs a structured JSON block before executing, enabling downstream automation to parse results reliably:
+
+```json
+{
+  "status": "optimized",
+  "expert_profile": {
+    "name": "Blair Enns",
+    "rationale": "Author of Pricing Creativity — reframes pricing as a positioning problem",
+    "frameworks": ["Practitioner's dilemma", "Value-based pricing", "Price-sensitive client segmentation"]
+  },
+  "optimized_prompt": "...",
+  "ui_render": "**Expert**: Blair Enns — ...\n\n**Optimized prompt**:\n> ...\n\n---",
+  "control_flag": {
+    "immediate_execute": true,
+    "user_confirm_required": false
+  }
+}
+```
+
+**Status values:**
+- `optimized` — Expert selected, prompt rewritten, answer delivered
+- `skipped` — Trivial task, proceeded with original prompt
+- `error` — Optimization failed, fell back to original prompt
+
+The `ui_render` field contains the human-readable Markdown displayed in the terminal. The `optimized_prompt` field is what gets executed.
 
 ## Install
 
